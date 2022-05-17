@@ -40,15 +40,10 @@
             Dictionary<int, int> level = GetDegreeOfSeparation(src, dst);
 
             Console.WriteLine($"Degree of Separation: {level.Last().Value}");
+            HashSet<List<int>> paths = GetAllPaths(level);
 
-            Console.Write("Nodes: ");
-            foreach(KeyValuePair<int, int> pair in level)
-            {
-                Console.Write($"({numberEncoding[pair.Key]},{pair.Value}) ");
-            }
-            Console.WriteLine();
-
-
+            int str = GetRelationStrength(paths);
+            Console.WriteLine($"Relation strength: {str}\n");
         }
 
         private static Dictionary<int, int> GetDegreeOfSeparation(string src, string dst)
@@ -99,18 +94,32 @@
 
             foreach (KeyValuePair<int, int> pair in level.Reverse())
             {
-                int parents = level.Where(p => p.Value == currentLevel - 1 && actorMap[p.Key].Contains(path[index])).Count();
-                if (pair.Value == currentLevel - 1 && actorMap[pair.Key].Contains(path[index]))
+                if (actorMap[pair.Key].Contains(path[index]))
                 {
-                    path.Add(pair.Key);
-                    if (parents > 1)
+                    if (pair.Value == currentLevel - 1)
                     {
-                        level.Remove(pair.Key);
+                        path.Add(pair.Key);
+                        currentLevel = pair.Value;
+                        index++;
+                        continue;
                     }
-                    currentLevel = pair.Value;
-                    index++;
+
+                    else if (pair.Value == currentLevel && index != 0)
+                    {
+                        if (actorMap[pair.Key].Contains(path[index - 1]))
+                        {
+                            foreach (int p in path)
+                            {
+                                if (level.ContainsKey(p) && level[p] == pair.Value)
+                                {
+                                    level.Remove(p);
+                                    break;
+                                }
+                            }
+
+                        }
+                    }
                 }
-                parents = 0;
             }
 
             path.Reverse();
@@ -132,6 +141,31 @@
             }
 
             return paths;
+        }
+
+        private static int GetRelationStrength(HashSet<List<int>> paths)
+        {
+            int[] strengths = new int[paths.Count];
+            int count = 0;
+            foreach (List<int> path in paths)
+            {
+                int total = 0;
+                for (int i = 0; i < path.Count - 1; i++)
+                {
+                    int actor = path[i];
+                    int otherActor = path[i + 1];
+
+                    List<string> movieList = movieMap[actor];
+                    List<string> otherMovieList = movieMap[otherActor];
+
+                    total += movieList.Intersect(otherMovieList).Count();
+                }
+
+                strengths[count] = total;
+                count++;
+            }
+
+            return strengths.Max();
         }
 
         public static void GetActorMap()
