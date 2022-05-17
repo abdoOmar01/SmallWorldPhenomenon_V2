@@ -18,7 +18,7 @@
         public static string MEDIUM_2_QUERY_2 => @"Testcases/Complete/medium/Case2/queries2000.txt";
         public static string LARGE_QUERY_1 => @"Testcases/Complete/large/queries26.txt";
         public static string LARGE_QUERY_2 => @"Testcases/Complete/large/queries600.txt";
-        public static string EXTREME_QUERY => @"Testcases/Complete/extreme/queries22.txt";
+        public static string EXTREME_QUERY_1 => @"Testcases/Complete/extreme/queries22.txt";
         public static string EXTREME_QUERY_2 => @"Testcases/Complete/extreme/queries200.txt";
     }
 }

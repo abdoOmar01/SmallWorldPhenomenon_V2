@@ -2,89 +2,163 @@
 {
     static class Graph
     {
-        private static Dictionary<string, List<string>> movieMap = new Dictionary<string, List<string>>();
-        private static Dictionary<string, HashSet<string>> actorMap = new Dictionary<string, HashSet<string>>();
+        private static Dictionary<int, List<string>> movieMap = new Dictionary<int, List<string>>();
+        private static Dictionary<int, HashSet<int>> actorMap = new Dictionary<int, HashSet<int>>();
+
+        private static Dictionary<string, int> actorEncoding = new Dictionary<string, int>();
+        private static Dictionary<int, string> numberEncoding = new Dictionary<int, string>();
+        private static int counter = 0;
+
         public static void Initialize(string actor, string movie)
         {
             // Doesn't need to check actorMap as it will be the first time accessing it
-            if (!movieMap.ContainsKey(actor))
+            if (!actorEncoding.ContainsKey(actor))
             {
-                movieMap.Add(actor, new List<string>());
-                actorMap.Add(actor, new HashSet<string>());
+                actorEncoding.Add(actor, counter);
+                numberEncoding.Add(counter++, actor);
+
+                if (!movieMap.ContainsKey(actorEncoding[actor]))
+                {
+                    movieMap.Add(actorEncoding[actor], new List<string>());
+                    actorMap.Add(actorEncoding[actor], new HashSet<int>());
+                }
             }
-            movieMap[actor].Add(movie);
+
+            movieMap[actorEncoding[actor]].Add(movie);
         }
 
         public static void AddAdjacent(string actor, string otherActor)
         {
-            actorMap[actor].Add(otherActor);
-            actorMap[otherActor].Add(actor);
+            actorMap[actorEncoding[actor]].Add(actorEncoding[otherActor]);
+            actorMap[actorEncoding[otherActor]].Add(actorEncoding[actor]);
         }
 
         public static void ParseQuery(string src, string dst)
         {
-            //Console.WriteLine($"{src} --> {dst} = {GetDegreeOfSeparation(src, dst)}");
-            GetDegreeOfSeparation(src, dst);
+            Console.WriteLine($"{src} --> {dst}");
+
+            Dictionary<int, int> level = GetDegreeOfSeparation(src, dst);
+
+            Console.WriteLine($"Degree of Separation: {level.Last().Value}");
+
+            Console.Write("Nodes: ");
+            foreach(KeyValuePair<int, int> pair in level)
+            {
+                Console.Write($"({numberEncoding[pair.Key]},{pair.Value}) ");
+            }
+            Console.WriteLine();
+
+
         }
 
-        private static int GetDegreeOfSeparation(string src, string dst)
+        private static Dictionary<int, int> GetDegreeOfSeparation(string src, string dst)
         {
-            Queue<string> nodes = new Queue<string>();
-            List<string> visited = new List<string>();
+            int srcInt = actorEncoding[src];
+            int dstInt = actorEncoding[dst];
 
-            nodes.Enqueue(src);
-            visited.Add(src);
+            Queue<int> nodes = new Queue<int>();
+            bool[] visited = new bool[actorMap.Count];
 
-            Dictionary<string, int> level = new Dictionary<string, int>();
-            level.Add(src, 0);
+            nodes.Enqueue(srcInt);
+            visited[srcInt] = true;
+
+            Dictionary<int, int> level = new Dictionary<int, int>();
+            level.Add(srcInt, 0);
 
             while (nodes.Count != 0)
             {
-                string node = nodes.Dequeue();
+                int node = nodes.Dequeue();
                 
-                foreach(string actor in actorMap[node])
+                foreach(int actor in actorMap[node])
                 {
-                    if (!visited.Contains(actor))
+                    if (!visited[actor])
                     {
-                        visited.Add(actor);
+                        visited[actor] = true;
                         level.Add(actor, level[node] + 1);
 
-                        if (actor.Equals(dst))
+                        if (actor == dstInt)
                         {
-                            return level[actor];
+                            return level;
                         }
 
                         nodes.Enqueue(actor);
                     }
                 }
             }
-            return -1;
+
+            return level;
         }
 
-        public static void GetMovieMap()
+        private static List<int> GetPath(Dictionary<int, int> level)
         {
-            foreach (string actor in movieMap.Keys)
+            List<int> path = new List<int>();
+
+            path.Add(level.Last().Key);
+            int index = 0;
+            int currentLevel = level.Last().Value;
+
+            foreach (KeyValuePair<int, int> pair in level.Reverse())
             {
-                Console.Write($"{actor} --> ");
-                foreach (string movie in movieMap[actor])
+                int parents = level.Where(p => p.Value == currentLevel - 1 && actorMap[p.Key].Contains(path[index])).Count();
+                if (pair.Value == currentLevel - 1 && actorMap[pair.Key].Contains(path[index]))
                 {
-                    Console.Write($"{movie} ");
+                    path.Add(pair.Key);
+                    if (parents > 1)
+                    {
+                        level.Remove(pair.Key);
+                    }
+                    currentLevel = pair.Value;
+                    index++;
                 }
-                Console.WriteLine();
+                parents = 0;
             }
+
+            path.Reverse();
+
+            return path;
+        }
+
+        private static HashSet<List<int>> GetAllPaths(Dictionary<int, int> level)
+        {
+            HashSet<List<int>> paths = new HashSet<List<int>>();
+            List<int> defaultPath = GetPath(level);
+            paths.Add(defaultPath);
+            List<int> newPath = GetPath(level);
+            while (!defaultPath.SequenceEqual(newPath))
+            {
+                paths.Add(newPath);
+                defaultPath = newPath;
+                newPath = GetPath(level);
+            }
+
+            return paths;
         }
 
         public static void GetActorMap()
         {
-            foreach (string actor in actorMap.Keys)
+            foreach(KeyValuePair<int, HashSet<int>> pair in actorMap)
             {
-                Console.Write($"{actor} --> ");
-                foreach (string otherActor in actorMap[actor])
+                Console.Write($"{numberEncoding[pair.Key]} --> ");
+                foreach(int actor in pair.Value)
                 {
-                    Console.Write($"{otherActor} ");
+                    Console.Write($"{numberEncoding[actor]} ");
                 }
                 Console.WriteLine();
             }
+        }
+
+        public static void PrintPaths(HashSet<List<int>> paths)
+        {
+            foreach(List<int> path in paths)
+            {
+                Console.Write("Path: ");
+                foreach (int p in path)
+                {
+                    Console.Write(numberEncoding[p] + " ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine();
         }
     }
 }

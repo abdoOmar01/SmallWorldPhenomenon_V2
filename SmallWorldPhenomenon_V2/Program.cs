@@ -7,7 +7,7 @@
             Parser.ReadMovieFile(Paths.SAMPLE);
             Parser.ReadQueryFile(Paths.SAMPLE_QUERY);
             //Graph.GetMovieMap();
-            //Graph.GetActorMap();
+            Graph.GetActorMap();
         }
     }
 }
