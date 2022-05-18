@@ -11,7 +11,6 @@
 
         public static void Initialize(string actor, string movie)
         {
-            // Doesn't need to check actorMap as it will be the first time accessing it
             if (!actorEncoding.ContainsKey(actor))
             {
                 actorEncoding.Add(actor, counter);
@@ -42,8 +41,10 @@
             Console.WriteLine($"Degree of Separation: {level.Last().Value}");
             HashSet<List<int>> paths = GetAllPaths(level);
 
-            int str = GetRelationStrength(paths);
-            Console.WriteLine($"Relation strength: {str}\n");
+            List<List<string>> chainsOfMovies = GetRelationStrength(paths);
+
+            List<string> shortestChain = FindShortestChainOfMovies(chainsOfMovies);
+            PrintShortestChainOfMovies(shortestChain);
         }
 
         private static Dictionary<int, int> GetDegreeOfSeparation(string src, string dst)
@@ -64,7 +65,7 @@
             {
                 int node = nodes.Dequeue();
                 
-                foreach(int actor in actorMap[node])
+                foreach (int actor in actorMap[node])
                 {
                     if (!visited[actor])
                     {
@@ -129,27 +130,35 @@
 
         private static HashSet<List<int>> GetAllPaths(Dictionary<int, int> level)
         {
+            //GetPath is called multiple times until it runs out of unique paths
+
             HashSet<List<int>> paths = new HashSet<List<int>>();
-            List<int> defaultPath = GetPath(level);
-            paths.Add(defaultPath);
+
+            List<int> firstPath = GetPath(level);
+            paths.Add(firstPath);
+
             List<int> newPath = GetPath(level);
-            while (!defaultPath.SequenceEqual(newPath))
+            while (!firstPath.SequenceEqual(newPath))
             {
                 paths.Add(newPath);
-                defaultPath = newPath;
+                firstPath = newPath;
                 newPath = GetPath(level);
             }
 
             return paths;
         }
 
-        private static int GetRelationStrength(HashSet<List<int>> paths)
+        private static List<List<string>> GetRelationStrength(HashSet<List<int>> paths)
         {
             int[] strengths = new int[paths.Count];
+            List<List<string>> chains = new List<List<string>>();
             int count = 0;
+
             foreach (List<int> path in paths)
             {
                 int total = 0;
+                chains.Insert(count, new List<string>());
+
                 for (int i = 0; i < path.Count - 1; i++)
                 {
                     int actor = path[i];
@@ -158,22 +167,114 @@
                     List<string> movieList = movieMap[actor];
                     List<string> otherMovieList = movieMap[otherActor];
 
-                    total += movieList.Intersect(otherMovieList).Count();
-                }
-
+                    IEnumerable<string> commonMovies = movieList.Intersect(otherMovieList);
+                    foreach (string movie in commonMovies)
+                    {
+                        chains[count].Add(movie);
+                    }
+                    
+                    chains[count].Add("=>");
+                    total += commonMovies.Count();
+                }   
                 strengths[count] = total;
                 count++;
             }
 
-            return strengths.Max();
+            Console.WriteLine($"Relation strength: {strengths.Max()}");
+
+            return chains;
         }
 
-        public static void GetActorMap()
+        private static List<string> FindShortestChainOfMovies(List<List<string>> chains)
         {
-            foreach(KeyValuePair<int, HashSet<int>> pair in actorMap)
+            // Shortest chain of movies is defined by two attributes
+            // 1) The chain with the shallowest depth
+            // 2) The chains with the most movies
+
+            // If two chains are found to have the same depth, then the chain with the most movies
+            // is selected
+
+            int minLevel = -1;
+            int maxMovies = -1;
+            int chainIndex = -1;
+            for (int j = 0; j < chains.Count; j++)
+            {
+                int levelCount = 0;
+                int movieCount = 0;
+
+                foreach (string c in chains[j])
+                {
+                    if (c.Equals("=>"))
+                    {
+                        levelCount++;
+                    }
+                    else
+                    {
+                        movieCount++;
+                    }
+                }
+
+                if (minLevel == -1 || levelCount < minLevel)
+                {
+                    minLevel = levelCount;
+                    chainIndex = j;
+                }
+                else if (levelCount == minLevel && movieCount > maxMovies)
+                {
+                    chainIndex = j;
+                }
+
+                if (maxMovies == -1 || movieCount > maxMovies)
+                {
+                    maxMovies = movieCount;
+                }
+            }
+
+            List<string> shortestChain = chains[chainIndex];
+
+            return shortestChain;
+        }
+        private static void PrintShortestChainOfMovies(List<string> shortestChain)
+        {
+            Console.Write("Chain of movies: ");
+
+            int i = 0;
+            while (i < shortestChain.Count)
+            {
+                if (!shortestChain[i].Equals("=>"))
+                {
+                    Console.Write(shortestChain[i]);
+                }
+
+                while (i + 1 < shortestChain.Count)
+                {
+                    if (shortestChain[i + 1].Equals("=>"))
+                    {
+                        if (i + 2 < shortestChain.Count)
+                        {
+                            Console.Write(" => ");
+                            Console.Write(shortestChain[i + 2]);
+                            i += 2;
+                            continue;
+                        }
+                        break;
+                    }
+                    Console.Write($" or {shortestChain[i + 1]}");
+                    i++;
+                }
+
+                i++;
+            }
+
+            Console.WriteLine('\n');
+        }
+
+        public static void PrintActorMap()
+        {
+            foreach (KeyValuePair<int, HashSet<int>> pair in actorMap)
             {
                 Console.Write($"{numberEncoding[pair.Key]} --> ");
-                foreach(int actor in pair.Value)
+                foreach (int actor in pair.Value)
                 {
                     Console.Write($"{numberEncoding[actor]} ");
                 }
@@ -181,18 +282,18 @@
             }
         }
 
-        public static void PrintPaths(HashSet<List<int>> paths)
+        public static void PrintMovieMap()
         {
-            foreach(List<int> path in paths)
+            foreach (KeyValuePair<int, List<string>> pair in movieMap)
             {
-                Console.Write("Path: ");
-                foreach (int p in path)
+                Console.Write($"{numberEncoding[pair.Key]} --> ");
+                foreach (string movie in pair.Value)
                 {
-                    Console.Write(numberEncoding[p] + " ");
+                    Console.Write($"{movie} / ");
                 }
                 Console.WriteLine();
             }
-            Console.WriteLine();
         }
+
     }
 }

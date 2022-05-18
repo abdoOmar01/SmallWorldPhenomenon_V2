@@ -4,10 +4,15 @@
     {
         public static void Main(string[] args)
         {
-            Parser.ReadMovieFile(Paths.SAMPLE);
-            Parser.ReadQueryFile(Paths.SAMPLE_QUERY);
-            //Graph.GetMovieMap();
-            //Graph.GetActorMap();
+            //Paths to all files are found in the Paths static class
+
+            //Path naming is self-explanatory e.g. MEDIUM_1, LARGE, etc...
+            //If a movie file has two queries then a number is added to the end of query name
+
+            //Just change the following two parameters
+
+            Parser.ReadMovieFile(Paths.EXTREME);
+            Parser.ReadQueryFile(Paths.EXTREME_QUERY_2);
         }
     }
 }
