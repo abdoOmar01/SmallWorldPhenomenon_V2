@@ -34,12 +34,12 @@
 
         public static void ParseQuery(string src, string dst)
         {
-            Console.WriteLine($"{src} --> {dst}");
+            Console.WriteLine($"{src}/{dst}");
 
             Dictionary<int, int> level = GetDegreeOfSeparation(src, dst);
 
-            Console.WriteLine($"Degree of Separation: {level.Last().Value}");
-            HashSet<List<int>> paths = GetAllPaths(level);
+            Console.Write($"DoS = {level.Last().Value}");
+            List<List<int>> paths = GetAllPaths(level);
 
             List<List<string>> chainsOfMovies = GetRelationStrength(paths);
 
@@ -117,7 +117,6 @@
                                     break;
                                 }
                             }
-
                         }
                     }
                 }
@@ -128,11 +127,11 @@
             return path;
         }
 
-        private static HashSet<List<int>> GetAllPaths(Dictionary<int, int> level)
+        private static List<List<int>> GetAllPaths(Dictionary<int, int> level)
         {
             //GetPath is called multiple times until it runs out of unique paths
 
-            HashSet<List<int>> paths = new HashSet<List<int>>();
+            List<List<int>> paths = new List<List<int>>();
 
             List<int> firstPath = GetPath(level);
             paths.Add(firstPath);
@@ -148,9 +147,10 @@
             return paths;
         }
 
-        private static List<List<string>> GetRelationStrength(HashSet<List<int>> paths)
+        private static List<List<string>> GetRelationStrength(List<List<int>> paths)
         {
             int[] strengths = new int[paths.Count];
+
             List<List<string>> chains = new List<List<string>>();
             int count = 0;
 
@@ -180,7 +180,24 @@
                 count++;
             }
 
-            Console.WriteLine($"Relation strength: {strengths.Max()}");
+            int str = strengths.Max();
+            Console.WriteLine($", RS = {str}");
+
+            int index = Array.IndexOf(strengths, str);
+            Console.Write("CHAIN OF ACTORS: ");
+
+            int j = 0;
+            while (j < paths[index].Count)
+            {
+                Console.Write(numberEncoding[paths[index][j]]);
+                while (j + 1 < paths[index].Count)
+                {
+                    Console.Write($" -> {numberEncoding[paths[index][j + 1]]}");
+                    j++;
+                }
+                j++;
+            }
+            Console.WriteLine();
 
             return chains;
         }
@@ -234,9 +251,10 @@
 
             return shortestChain;
         }
+
         private static void PrintShortestChainOfMovies(List<string> shortestChain)
         {
-            Console.Write("Chain of movies: ");
+            Console.Write("CHAIN OF MOVIES: ");
 
             int i = 0;
             while (i < shortestChain.Count)
@@ -266,6 +284,34 @@
                 i++;
             }
 
+            Console.WriteLine('\n');
+        }
+
+        public static void PrintMovieLink()
+        {
+            HashSet<string> movies = new HashSet<string>();
+            int i = 0;
+
+            while (i < movieMap.Count)
+            {
+                List<string> list = movieMap[i];
+                i++;
+                while (i + 1 < movieMap.Count)
+                {
+                    IEnumerable<string> s = movieMap[i].Intersect(movieMap[i + 1]);
+                    foreach (string s2 in s)
+                    {
+                        movies.Add(s2);
+                    }
+                    i++;
+                }
+            }
+
+            Console.Write("MOVIES LINK: ");
+            foreach (string movie in movies)
+            {
+                Console.Write(movie + ' ');
+            }
             Console.WriteLine('\n');
         }
 

@@ -13,6 +13,8 @@
 
             Parser.ReadMovieFile(Paths.EXTREME);
             Parser.ReadQueryFile(Paths.EXTREME_QUERY_2);
+
+            //Graph.PrintMovieLink();
         }
     }
 }
